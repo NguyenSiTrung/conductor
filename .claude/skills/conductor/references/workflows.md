@@ -178,10 +178,24 @@ Read into context:
 - `conductor/tracks/<track_id>/plan.md`
 - `conductor/workflow.md`
 
-### 4. Update Status
+### 4. Resume State Management
+
+Check for `conductor/tracks/<track_id>/implement_state.json`:
+- If exists: Resume from saved position
+- If not: Create initial state
+
+State file tracks:
+- `current_phase`: Name of current phase
+- `current_task_index`: Zero-based task index
+- `status`: "starting" | "in_progress" | "paused"
+- `last_updated`: ISO timestamp
+
+Update state after each task. Delete on completion.
+
+### 5. Update Status
 In `conductor/tracks.md`, change `## [ ] Track:` to `## [~] Track:` for selected track.
 
-### 5. Execute Tasks
+### 6. Execute Tasks
 For each incomplete task in plan.md:
 
 1. **Mark In Progress**: Change `[ ]` to `[~]`
@@ -207,14 +221,14 @@ For each incomplete task in plan.md:
    git commit -m "conductor(plan): Mark task complete"
    ```
 
-### 6. Phase Verification
+### 7. Phase Verification
 At end of each phase:
 1. Run full test suite
 2. Present manual verification steps to user
 3. Ask for confirmation
 4. Create checkpoint commit
 
-### 7. Track Completion
+### 8. Track Completion
 When all tasks done:
 1. Update `conductor/tracks.md`: `## [~]` → `## [x]`
 2. Ask user: Archive, Delete, or Keep the track folder?

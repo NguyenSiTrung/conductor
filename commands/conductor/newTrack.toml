@@ -109,23 +109,45 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
 1.  **Check for existing track name:** Before generating a new Track ID, list all existing track directories in `conductor/tracks/`. Extract the short names from these track IDs (e.g., ``shortname_YYYYMMDD`` -> `shortname`). If the proposed short name for the new track (derived from the initial description) matches an existing short name, halt the `newTrack` creation. Explain that a track with that name already exists and suggest choosing a different name or resuming the existing track.
 2.  **Generate Track ID:** Create a unique Track ID (e.g., ``shortname_YYYYMMDD``).
-3.  **Create Directory:** Create a new directory: `conductor/tracks/<track_id>/`
-4.  **Create `metadata.json`:** Create a metadata file at `conductor/tracks/<track_id>/metadata.json` with content like:
+3.  **Ask for Priority:**
+    > "What priority should this track have?"
+    > A) 🔴 Critical - Blocking other work
+    > B) 🟠 High - Important, do soon
+    > C) 🟡 Medium - Normal priority (default)
+    > D) 🟢 Low - Nice to have
+    
+    If user doesn't respond or skips, default to "medium".
+
+4.  **Ask for Dependencies (Optional):**
+    > "Does this track depend on any other tracks being completed first?"
+    - If yes, list incomplete tracks from `conductor/tracks.md` and let user select
+    - Store selected track_ids in `depends_on` array
+    - If no incomplete tracks exist or user skips, set to empty array
+
+5.  **Ask for Time Estimate (Optional):**
+    > "Estimated hours to complete? (Enter number or skip)"
+    - If user provides a number, store in `estimated_hours`
+    - If user skips, set to null
+6.  **Create Directory:** Create a new directory: `conductor/tracks/<track_id>/`
+7.  **Create `metadata.json`:** Create a metadata file at `conductor/tracks/<track_id>/metadata.json` with content like:
     ```json
     {
       "track_id": "<track_id>",
-      "type": "feature", // or "bug", "chore", etc.
-      "status": "new", // or in_progress, completed, cancelled
+      "type": "feature",
+      "status": "new",
+      "priority": "medium",
+      "depends_on": [],
+      "estimated_hours": null,
       "created_at": "YYYY-MM-DDTHH:MM:SSZ",
       "updated_at": "YYYY-MM-DDTHH:MM:SSZ",
-      "description": "<Initial user description>",
+      "description": "<Initial user description>"
     }
     ```
-    *   Populate fields with actual values. Use the current timestamp.
-5.  **Write Files:**
+    *   Populate fields with actual values from steps 3-5. Use the current timestamp.
+8.  **Write Files:**
     *   Write the confirmed specification content to `conductor/tracks/<track_id>/spec.md`.
     *   Write the confirmed plan content to `conductor/tracks/<track_id>/plan.md`.
-6.  **Update Tracks File:**
+9.  **Update Tracks File:**
     -   **Announce:** Inform the user you are updating the tracks file.
     -   **Append Section:** Append a new section for the track to the end of `conductor/tracks.md`. The format MUST be:
         ```markdown
@@ -136,7 +158,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         *Link: [./conductor/tracks/<track_id>/](./conductor/tracks/<track_id>/)*
         ```
         (Replace placeholders with actual values)
-7.  **Announce Completion:** Inform the user:
+10. **Announce Completion:** Inform the user:
     > "New track '<track_id>' has been created and added to the tracks file. You can now start implementation by running `/conductor:implement`."
 
 """

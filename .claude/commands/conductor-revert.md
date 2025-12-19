@@ -3,87 +3,177 @@ description: Git-aware revert of tracks, phases, or tasks
 argument-hint: [track|phase|task]
 ---
 
+<!-- 
+SYSTEM DIRECTIVE: You are an AI agent for the Conductor framework serving as a Git-aware assistant for reverting work.
+CRITICAL: Validate every tool call. If any fails, halt and announce the failure.
+CRITICAL: User's explicit confirmation is required at multiple checkpoints.
+-->
+
 # Conductor Revert
 
 Revert Conductor work: $ARGUMENTS
 
-## 1. Check Setup
+**Scope:** Revert logical units of work tracked by Conductor (Tracks, Phases, Tasks) by investigating Git history and finding all associated commits.
 
-If `conductor/tracks.md` doesn't exist, tell user to run `/conductor-setup` first.
+---
 
-## 2. Identify Target
+## 1.0 SETUP CHECK
 
-**If `$ARGUMENTS` provided:**
-- Parse to identify track, phase, or task name
-- Find it in `conductor/tracks.md` or relevant `plan.md`
+**PROTOCOL: Verify project is properly set up before proceeding.**
 
-**If no arguments:**
-Show menu of recent revertible items:
+1. **Verify Tracks File:** Check if `conductor/tracks.md` exists
+   - If NOT exists: HALT and instruct: "The project has not been set up or `conductor/tracks.md` is corrupted. Please run `/conductor-setup` or restore the file."
 
-```
-## What would you like to revert?
+2. **Verify Track Content:** Check if `conductor/tracks.md` is not empty
+   - If empty: HALT with same message as above
 
-### In Progress Items
-1. [~] Task: "Add user authentication" (track: auth_20241215)
-2. [~] Phase: "Backend API" (track: auth_20241215)
+---
 
-### Recently Completed
-3. [x] Task: "Create login form" (abc1234)
-4. [x] Task: "Add validation" (def5678)
+## 2.0 PHASE 1: INTERACTIVE TARGET SELECTION & CONFIRMATION
 
-Enter number or describe what to revert:
-```
+**GOAL: Guide user to clearly identify and confirm the logical unit to revert before analysis begins.**
 
-Prioritize showing in-progress items first, then recently completed.
+1. **Initiate Revert Process:** Determine user's target.
 
-## 3. Find Associated Commits
+2. **Check for User-Provided Target:**
+   - **IF target provided** (e.g., `/conductor-revert track <track_id>`): → **PATH A: Direct Confirmation**
+   - **IF NO target provided**: → **PATH B: Guided Selection Menu** (default)
 
-For the selected item:
+3. **Interaction Paths:**
 
-1. Read the relevant `plan.md` file
-2. Extract commit SHAs from completed tasks (the 7-char hash after `[x]`)
-3. Find implementation commits
-4. Find corresponding plan-update commits
+   ### PATH A: Direct Confirmation
 
-**For track revert:** Also find the commit that added the track to `tracks.md`
+   1. Find the specific track, phase, or task in `tracks.md` or relevant `plan.md`
+   2. Ask for confirmation:
+      > "You asked to revert the [Track/Phase/Task]: '[Description]'. Is this correct?"
+      > A) Yes
+      > B) No
+   3. If "Yes": Establish as `target_intent` → Proceed to Phase 2
+   4. If "No": Ask clarifying questions to find correct item
 
-## 4. Present Revert Plan
+   ### PATH B: Guided Selection Menu
 
-```
-## Revert Plan
+   1. **Identify Revert Candidates:**
+      - **Scan All Plans:** Read `conductor/tracks.md` AND every `conductor/tracks/*/plan.md`
+      - **Prioritize In-Progress:** Find ALL Tracks, Phases, Tasks marked `[~]`
+      - **Fallback to Completed:** If NO in-progress items found, find 5 most recently completed (`[x]`)
 
-**Target:** [Task/Phase/Track] - "[Description]"
+   2. **Present Unified Hierarchical Menu:**
 
-**Commits to revert (newest first):**
-1. def5678 - conductor(plan): Mark task complete
-2. abc1234 - feat(auth): Add login form
+      **Example when in-progress items found:**
+      > "I found multiple in-progress items. Please choose which to revert:"
+      >
+      > Track: track_20251208_user_profile
+      >   1) [Phase] Implement Backend API
+      >   2) [Task] Update user model
+      >
+      > 3) A different Track, Task, or Phase.
 
-**Action:** Will run `git revert --no-edit` on each commit
+      **Example when showing recently completed:**
+      > "No items are in progress. Please choose a recently completed item to revert:"
+      >
+      > Track: track_20251208_user_profile
+      >   1) [Phase] Foundational Setup
+      >   2) [Task] Initialize React application
+      >
+      > Track: track_20251208_auth_ui
+      >   3) [Task] Create login form
+      >
+      > 4) A different Track, Task, or Phase.
 
-Proceed? (yes/no)
-```
+   3. **Process User's Choice:**
+      - If numbered selection (1, 2, 3...): Set as `target_intent` → Proceed to Phase 2
+      - If "different" option or unclear: Engage in dialogue:
+        - "What is the name or ID of the track you're looking for?"
+        - "Can you describe the task you want to revert?"
+        - Once identified, loop back to PATH A for final confirmation
 
-Wait for explicit user confirmation.
+4. **Halt on Failure:** If no items found to present, announce and halt.
 
-## 5. Execute Revert
+---
 
-For each commit, newest to oldest:
-```bash
-git revert --no-edit <sha>
-```
+## 3.0 PHASE 2: GIT RECONCILIATION & VERIFICATION
 
-**If conflicts occur:**
-1. Stop and inform user
-2. Show conflicting files
-3. Guide through manual resolution or abort
+**GOAL: Find ALL actual commits in Git history that correspond to user's confirmed intent.**
 
-## 6. Update Plan State
+1. **Identify Implementation Commits:**
+   - Find primary SHA(s) for all tasks/phases recorded in target's `plan.md`
 
-After successful revert:
-- Change `[x]` back to `[ ]` for reverted tasks
-- Change `[~]` back to `[ ]` if reverting in-progress items
-- Remove commit SHAs from reverted task lines
+   **Handle "Ghost" Commits (Rewritten History):**
+   - If SHA from plan is NOT found in Git:
+     - Announce this to user
+     - Search Git log for commit with highly similar message
+     - Ask user to confirm it as the replacement
+     - If not confirmed, HALT
 
-## 7. Announce Completion
+2. **Identify Associated Plan-Update Commits:**
+   - For each validated implementation commit:
+     - Use `git log` to find corresponding plan-update commit that happened *after* it
+     - Look for commits that modified the relevant `plan.md` file
 
-"Reverted [target]. Plan updated. Status markers reset to pending."
+3. **Identify Track Creation Commit (Track Revert Only):**
+   - **IF** reverting entire track:
+     - Use `git log -- conductor/tracks.md`
+     - Find commit that first introduced `## [ ] Track: <Track Description>` line
+     - Add this "track creation" commit SHA to revert list
+
+4. **Compile and Analyze Final List:**
+   - Create comprehensive list of ALL SHAs to revert
+   - For each commit, check for:
+     - Merge commits (warn user)
+     - Cherry-pick duplicates (warn user)
+
+---
+
+## 4.0 PHASE 3: FINAL EXECUTION PLAN CONFIRMATION
+
+**GOAL: Present clear, final plan before modifying anything.**
+
+1. **Summarize Findings:**
+   > "I have analyzed your request. Here is the plan:"
+   > * **Target:** Revert [Task/Phase/Track] '[Description]'
+   > * **Commits to Revert:** [count]
+   >   - `<sha_code_commit>` ('feat: Add user profile')
+   >   - `<sha_plan_commit>` ('conductor(plan): Mark task complete')
+   > * **Action:** I will run `git revert` on these commits in reverse order.
+
+2. **Final Go/No-Go:**
+   > "**Do you want to proceed?**"
+   > A) Yes
+   > B) No
+
+3. **Handle Response:**
+   - If "Yes": Proceed to Phase 4
+   - If "No": Ask clarifying questions to get correct revert plan
+
+---
+
+## 5.0 PHASE 4: EXECUTION & VERIFICATION
+
+**GOAL: Execute revert, verify plan state, handle errors gracefully.**
+
+1. **Execute Reverts:**
+   - Run `git revert --no-edit <sha>` for each commit
+   - **Order:** Start from most recent, work backward
+
+2. **Handle Conflicts:**
+   - If revert fails due to merge conflict:
+     - HALT immediately
+     - Show conflicting files
+     - Provide clear instructions:
+       > "Merge conflict detected in: [files]"
+       > "Options:"
+       > 1. Resolve manually and run `git revert --continue`
+       > 2. Abort with `git revert --abort`
+
+3. **Verify Plan State:**
+   - After all reverts succeed, read relevant `plan.md` file(s)
+   - Ensure reverted item correctly reset:
+     - Change `[x]` back to `[ ]` for reverted tasks
+     - Change `[~]` back to `[ ]` if reverting in-progress items
+     - Remove commit SHAs from reverted task lines
+   - If not correct, perform file edit to fix and commit correction
+
+4. **Announce Completion:**
+   > "Revert complete. [Target] has been reverted. Plan is synchronized."
+   > "Status markers reset to pending. [X] commits reverted."

@@ -3,83 +3,238 @@ description: Execute tasks from a track's implementation plan
 argument-hint: [track_id]
 ---
 
+<!-- 
+SYSTEM DIRECTIVE: You are an AI agent for the Conductor framework.
+CRITICAL: Validate every tool call. If any fails, halt and announce the failure.
+-->
+
 # Conductor Implement
 
 Implement track: $ARGUMENTS
 
-## 1. Verify Setup
+---
 
-Check these files exist:
-- `conductor/product.md`
-- `conductor/tech-stack.md`
-- `conductor/workflow.md`
+## 1.0 SETUP CHECK
 
-If missing, tell user to run `/conductor-setup` first.
+**PROTOCOL: Verify Conductor environment is properly set up.**
 
-## 2. Select Track
+1. **Check Required Files:** Verify existence of:
+   - `conductor/product.md`
+   - `conductor/tech-stack.md`
+   - `conductor/workflow.md`
 
-- If `$ARGUMENTS` provided (track_id), find that track in `conductor/tracks.md`
-- Otherwise, find first incomplete track (`[ ]` or `[~]`) in `conductor/tracks.md`
-- If no tracks found, suggest `/conductor-newtrack`
+2. **Handle Missing Files:**
+   - If ANY missing: HALT immediately
+   - Announce: "Conductor is not set up. Please run `/conductor-setup` first."
+   - Do NOT proceed.
 
-## 3. Load Context
+---
 
-Read into context:
-- `conductor/tracks/<track_id>/spec.md`
-- `conductor/tracks/<track_id>/plan.md`
-- `conductor/workflow.md`
+## 2.0 TRACK SELECTION
 
-## 4. Update Track Status
+**PROTOCOL: Identify and select the track to be implemented.**
 
-In `conductor/tracks.md`, change `## [ ] Track:` to `## [~] Track:` for selected track.
+1. **Check for User Input:** Check if track name provided as argument.
 
-## 5. Execute Tasks
+2. **Parse Tracks File:** Read `conductor/tracks.md`
+   - Split by `---` separator to identify track sections
+   - Extract: status (`[ ]`, `[~]`, `[x]`), description, folder link
+   - **CRITICAL:** If no track sections found: "The tracks file is empty or malformed." → HALT
 
-For each incomplete task in plan.md:
+3. **Select Track:**
 
-### 5.1 Mark In Progress
-Change `[ ]` to `[~]` in plan.md
+   **If track name provided:**
+   - Exact, case-insensitive match against descriptions
+   - If unique match: Confirm "I found track '<description>'. Is this correct?"
+   - If no match or ambiguous: Inform user, suggest next available track
 
-### 5.2 TDD Workflow (if workflow.md specifies)
-1. Write failing tests for the task
-2. Run tests, confirm they fail
-3. Implement minimum code to make tests pass
-4. Run tests, confirm they pass
-5. Refactor if needed (keep tests passing)
+   **If no track name provided:**
+   - Find first track NOT marked `[x]`
+   - Announce: "No track name provided. Selecting next incomplete track: '<description>'"
+   - If all complete: "No incomplete tracks found. All tasks completed!" → HALT
 
-### 5.3 Commit Changes
-```bash
-git add .
-git commit -m "feat(<scope>): <description>"
-```
+4. **Check Dependencies:**
+   - Read `conductor/tracks/<track_id>/metadata.json`
+   - If `depends_on` array is not empty:
+     - For each dependency, check status in `conductor/tracks.md`
+     - If ANY not `[x]` (completed):
+       > "⚠️ This track has incomplete dependencies:"
+       > [List blocking tracks]
+       > "Do you want to proceed anyway?"
+       > A) Yes - Proceed despite incomplete dependencies
+       > B) No - Implement dependencies first
+     - If B: Suggest `/conductor-implement <first_dependency>`
 
-### 5.4 Update Plan
-- Change `[~]` to `[x]` for completed task
-- Append first 7 chars of commit SHA
+5. **Handle No Selection:** If no track selected, inform user and await instructions.
 
-### 5.5 Commit Plan Update
-```bash
-git add conductor/
-git commit -m "conductor(plan): Mark task '<task name>' complete"
-```
+---
 
-## 6. Phase Verification
+## 3.0 TRACK IMPLEMENTATION
 
-At end of each phase:
-1. Run full test suite
-2. Present manual verification steps to user
-3. Ask for explicit confirmation: "Does this work as expected?"
-4. Create checkpoint commit: `conductor(checkpoint): Phase <name> complete`
+**PROTOCOL: Execute the selected track.**
 
-## 7. Track Completion
+1. **Announce Action:** State which track you're beginning to implement.
 
-When all tasks done:
-1. Update `conductor/tracks.md`: change `## [~]` to `## [x]`
-2. Ask user: "Track complete. Archive, Delete, or Keep the track folder?"
-3. Announce completion
+2. **Update Status to 'In Progress':**
+   - In `conductor/tracks.md`, change `## [ ] Track:` to `## [~] Track:` for selected track
+
+3. **Load Track Context:**
+   - Identify track folder from tracks file link → get `<track_id>`
+   - Read (using absolute paths):
+     - `conductor/tracks/<track_id>/plan.md`
+     - `conductor/tracks/<track_id>/spec.md`
+     - `conductor/workflow.md`
+   - **Error Handling:** If any read fails, STOP and inform user
+
+4. **Check and Load Resume State:**
+
+   **Check for:** `conductor/tracks/<track_id>/implement_state.json`
+
+   **If exists:**
+   - Read state file
+   - Announce: "Resuming implementation from [current_phase] - Task [current_task_index + 1]"
+   - Skip to indicated task
+
+   **If not exists:**
+   - Create initial state:
+     ```json
+     {
+       "current_phase": "",
+       "current_task_index": 0,
+       "current_subtask_index": 0,
+       "last_updated": "<current_timestamp>",
+       "status": "starting"
+     }
+     ```
+
+5. **Execute Tasks and Update Track Plan:**
+
+   a. **Announce:** "Executing tasks from plan.md following workflow.md procedures."
+
+   b. **Iterate Through Tasks:** Loop through each task in `plan.md` one by one.
+
+   c. **For Each Task:**
+      - **i. Defer to Workflow:** `workflow.md` is the **single source of truth** for task lifecycle. Follow its "Task Workflow" section for implementation, testing, and committing.
+      - **ii. Update Implementation State:** After marking task in progress:
+        - Set `current_phase` to current phase name
+        - Set `current_task_index` to current task number
+        - Set `last_updated` to current timestamp
+        - Set `status` to "in_progress"
+
+   d. **Handle Blocked Tasks:**
+      - If task marked `[!]`:
+        > "⚠️ Task is blocked: [reason]"
+        > "What would you like to do?"
+        > A) Skip this task and continue
+        > B) Mark as unblocked and proceed
+        > C) Stop implementation here
+      - If B: Change `[!]` to `[~]` and proceed
+
+6. **Finalize Track:**
+   - After all tasks complete, update `conductor/tracks.md`: `## [~]` → `## [x]`
+   - **Clean Up State:** Delete `conductor/tracks/<track_id>/implement_state.json`
+   - Announce track fully complete
+
+---
+
+## 6.0 SYNCHRONIZE PROJECT DOCUMENTATION
+
+**PROTOCOL: Update project-level documentation based on completed track.**
+
+1. **Execution Trigger:** ONLY execute when track reaches `[x]` status. Do NOT execute for other status changes.
+
+2. **Announce:** "Synchronizing project documentation with completed track specifications."
+
+3. **Load Track Specification:** Read `conductor/tracks/<track_id>/spec.md`
+
+4. **Load Project Documents:** Read:
+   - `conductor/product.md`
+   - `conductor/product-guidelines.md`
+   - `conductor/tech-stack.md`
+
+5. **Analyze and Update:**
+
+   **a. Analyze `spec.md`:** Identify new features, functionality changes, or tech stack updates.
+
+   **b. Update `conductor/product.md`:**
+   - **Condition:** Determine if completed feature significantly impacts product description
+   - **Propose and Confirm:**
+     > "Based on the completed track, I propose these updates to `product.md`:"
+     > ```diff
+     > [Proposed changes in diff format]
+     > ```
+     > "Do you approve these changes? (yes/no)"
+   - **Action:** Only after explicit confirmation, perform edits. Record if changed.
+
+   **c. Update `conductor/tech-stack.md`:**
+   - **Condition:** Determine if significant tech stack changes detected
+   - **Propose and Confirm:**
+     > "Based on the completed track, I propose these updates to `tech-stack.md`:"
+     > ```diff
+     > [Proposed changes in diff format]
+     > ```
+     > "Do you approve these changes? (yes/no)"
+   - **Action:** Only after explicit confirmation, perform edits. Record if changed.
+
+   **d. Update `conductor/product-guidelines.md` (Strictly Controlled):**
+   - **CRITICAL WARNING:** This file defines core identity and communication style. Modify with EXTREME caution.
+   - **Condition:** ONLY propose if spec.md explicitly describes branding, voice, tone changes
+   - **Propose and Confirm:**
+     > "WARNING: The completed track suggests a change to core product guidelines. Please review carefully:"
+     > ```diff
+     > [Proposed changes in diff format]
+     > ```
+     > "Do you approve these CRITICAL changes to `product-guidelines.md`? (yes/no)"
+   - **Action:** Only after explicit confirmation, perform edits. Record if changed.
+
+6. **Final Report:**
+   > "Documentation synchronization complete."
+   > - **Changes made to `product.md`:** [description or "No changes needed"]
+   > - **Changes made to `tech-stack.md`:** [description or "No changes needed"]
+   > - **Changes made to `product-guidelines.md`:** [description or "No changes needed"]
+
+---
+
+## 7.0 TRACK CLEANUP
+
+**PROTOCOL: Offer to archive or delete completed track.**
+
+1. **Execution Trigger:** ONLY execute after track successfully implemented AND documentation sync complete.
+
+2. **Ask for User Choice:**
+   > "Track '<track_description>' is now complete. What would you like to do?"
+   > A) **Archive** - Move to `conductor/archive/` and remove from tracks file
+   > B) **Delete** - Permanently delete folder and remove from tracks file
+   > C) **Skip** - Leave in tracks file
+   >
+   > Please enter A, B, or C.
+
+3. **Handle User Response:**
+
+   **If A (Archive):**
+   - Create `conductor/archive/` if not exists
+   - Move `conductor/tracks/<track_id>` to `conductor/archive/<track_id>`
+   - Remove track section from `conductor/tracks.md`
+   - Announce: "Track '<description>' has been successfully archived."
+
+   **If B (Delete):**
+   - **CRITICAL WARNING:** Ask final confirmation:
+     > "WARNING: This will permanently delete the track folder. This cannot be undone. Are you sure? (yes/no)"
+   - If 'yes':
+     - Delete `conductor/tracks/<track_id>`
+     - Remove track section from `conductor/tracks.md`
+     - Announce: "Track '<description>' has been permanently deleted."
+   - If 'no':
+     - Announce: "Deletion cancelled. Track unchanged."
+
+   **If C (Skip) or other:**
+   - Announce: "Completed track will remain in your tracks file."
+
+---
 
 ## Status Markers Reference
 
 - `[ ]` - Pending
 - `[~]` - In Progress
 - `[x]` - Completed
+- `[!]` - Blocked

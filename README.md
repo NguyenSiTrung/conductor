@@ -18,6 +18,11 @@ The philosophy behind Conductor is simple: control your code. By treating contex
 - **Work as a team**: Set project-level context for your product, tech stack, and workflow preferences that become a shared foundation for your team.
 - **Build on existing projects**: Intelligent initialization for both new (Greenfield) and existing (Brownfield) projects.
 - **Smart revert**: A git-aware revert command that understands logical units of work (tracks, phases, tasks) rather than just commit hashes.
+- **Pause/Resume**: Implementation state is persisted, allowing you to pause work and resume later across sessions.
+- **Track Dependencies**: Define dependencies between tracks to enforce implementation order.
+- **Priority Management**: Assign priority levels (critical, high, medium, low) to tracks.
+- **Blocker Tracking**: Mark tasks as blocked with `[!]` marker and track reasons.
+- **Project Validation**: Validate conductor directory integrity and fix issues automatically.
 
 ## Installation
 
@@ -46,7 +51,7 @@ cp -r conductor/.claude/commands/* ~/.claude/commands/
 cp -r conductor/.claude/skills/* ~/.claude/skills/
 ```
 
-This installs 5 slash commands and a skill that auto-activates for conductor projects.
+This installs 10 slash commands and a skill that auto-activates for conductor projects.
 
 ### Agent Skills
 
@@ -95,10 +100,15 @@ When you run `/conductor:setup`, Conductor helps you define the core components 
 
 ### 2. Start a New Track (Feature or Bug)
 
-When you’re ready to take on a new feature or bug fix, run `/conductor:newTrack`. This initializes a **track** — a high-level unit of work. Conductor helps you generate two critical artifacts:
+When you're ready to take on a new feature or bug fix, run `/conductor:newTrack`. This initializes a **track** — a high-level unit of work. Conductor helps you generate two critical artifacts:
 
 - **Specs**: The detailed requirements for the specific job. What are we building and why?
 - **Plan**: An actionable to-do list containing phases, tasks, and sub-tasks.
+
+**New in v0.2.0:** You can now set:
+- **Priority**: Critical, High, Medium, or Low
+- **Dependencies**: Link tracks that must complete first
+- **Time Estimates**: Estimated hours for planning
 
 **Generated Artifacts:**
 - `conductor/tracks/<track_id>/spec.md`
@@ -118,6 +128,7 @@ Once you approve the plan, run `/conductor:implement`. Your coding agent then wo
 **Updated Artifacts:**
 - `conductor/tracks.md` (Status updates)
 - `conductor/tracks/<track_id>/plan.md` (Status updates)
+- `conductor/tracks/<track_id>/implement_state.json` (Progress tracking)
 - Project context files (Synchronized on completion)
 
 ```bash
@@ -125,33 +136,107 @@ Once you approve the plan, run `/conductor:implement`. Your coding agent then wo
 ```
 
 Conductor will:
-1.  Select the next pending task.
-2.  Follow the defined workflow (e.g., TDD: Write Test -> Fail -> Implement -> Pass).
-3.  Update the status in the plan as it progresses.
-4.  **Verify Progress**: Guide you through a manual verification step at the end of each phase to ensure everything works as expected.
+1.  Check for dependencies and warn if any are incomplete.
+2.  Resume from last position if a previous session was interrupted.
+3.  Select the next pending task.
+4.  Follow the defined workflow (e.g., TDD: Write Test -> Fail -> Implement -> Pass).
+5.  Update the status in the plan as it progresses.
+6.  **Verify Progress**: Guide you through a manual verification step at the end of each phase to ensure everything works as expected.
+7.  Sync project documentation on track completion.
+8.  Offer to archive or delete completed tracks.
 
-During implementation, you can also:
+## Status Markers
 
-- **Check status**: Get a high-level overview of your project's progress.
-  ```bash
-  /conductor:status
-  ```
-- **Revert work**: Undo a feature or a specific task if needed.
-  ```bash
-  /conductor:revert
-  ```
+Throughout conductor files:
+- `[ ]` - Pending/New
+- `[~]` - In Progress
+- `[x]` - Completed (with commit SHA)
+- `[!]` - Blocked (with reason)
+
+**Blocker Format:**
+```markdown
+- [!] Task name [BLOCKED: Waiting for API credentials]
+```
 
 ## Commands Reference
+
+### Core Commands
 
 | Gemini CLI | Claude Code | Description |
 | :--- | :--- | :--- |
 | `/conductor:setup` | `/conductor-setup` | Initialize project with product.md, tech-stack.md, workflow.md |
 | `/conductor:newTrack` | `/conductor-newtrack` | Create new feature/bug track with spec.md and plan.md |
 | `/conductor:implement` | `/conductor-implement` | Execute tasks from the current track's plan |
-| `/conductor:status` | `/conductor-status` | Display progress overview |
+| `/conductor:status` | `/conductor-status` | Display progress overview with priority grouping |
 | `/conductor:revert` | `/conductor-revert` | Git-aware revert of tracks, phases, or tasks |
 
+### New Commands (v0.2.0)
+
+| Gemini CLI | Claude Code | Description |
+| :--- | :--- | :--- |
+| `/conductor:validate` | `/conductor-validate` | Validate project integrity, find orphan tracks, fix issues |
+| `/conductor:block` | `/conductor-block` | Mark a task as blocked with a reason |
+| `/conductor:skip` | `/conductor-skip` | Skip current task and move to next |
+| `/conductor:archive` | `/conductor-archive` | Archive completed tracks to `conductor/archive/` |
+| `/conductor:export` | `/conductor-export` | Generate comprehensive project summary as markdown |
+
 Projects set up with either tool are fully interoperable.
+
+## Project Structure
+
+```
+conductor/
+├── product.md              # Product vision, users, goals
+├── product-guidelines.md   # Brand/style guidelines
+├── tech-stack.md           # Technology choices
+├── workflow.md             # Development standards (TDD, commits, coverage)
+├── tracks.md               # Master track list with status markers
+├── setup_state.json        # Setup progress tracking
+├── code_styleguides/       # Language-specific style guides
+├── archive/                # Archived completed tracks
+└── tracks/
+    └── <track_id>/         # Format: shortname_YYYYMMDD
+        ├── metadata.json   # Track type, status, priority, dependencies
+        ├── spec.md         # Requirements and acceptance criteria
+        ├── plan.md         # Phased task list with status
+        └── implement_state.json  # Resume state (auto-managed)
+```
+
+### metadata.json Schema
+
+```json
+{
+  "track_id": "auth_20241219",
+  "type": "feature",
+  "status": "new",
+  "priority": "high",
+  "depends_on": ["setup_20241218"],
+  "estimated_hours": 8,
+  "actual_hours": null,
+  "created_at": "2024-12-19T10:00:00Z",
+  "updated_at": "2024-12-19T10:00:00Z",
+  "description": "User authentication system"
+}
+```
+
+## Single Source of Truth
+
+Core workflow definitions are maintained in `workflows/`:
+
+```
+workflows/
+├── README.md                    # How workflows are used
+├── setup.md                     # Setup workflow logic
+├── newtrack.md                  # New track workflow logic
+├── implement.md                 # Implementation workflow logic
+├── status.md                    # Status workflow logic
+├── revert.md                    # Revert workflow logic
+├── validate.md                  # Validation workflow logic
+└── schemas/
+    ├── metadata.schema.json     # Track metadata schema
+    ├── setup_state.schema.json  # Setup state schema
+    └── implement_state.schema.json  # Implementation state schema
+```
 
 ## Resources
 
@@ -159,6 +244,24 @@ Projects set up with either tool are fully interoperable.
 - [Gemini CLI extensions](https://geminicli.com/docs/extensions/): Gemini CLI documentation
 - [Agent Skills specification](https://agentskills.io): Open standard for AI agent skills
 - [GitHub issues](https://github.com/gemini-cli-extensions/conductor/issues): Report bugs or request features
+
+## What's New in v0.2.0
+
+### New Features
+- **Pause/Resume Implementation**: Work is saved in `implement_state.json`, allowing you to stop and resume across sessions
+- **Track Dependencies**: Define which tracks must complete before others with `depends_on` field
+- **Priority Levels**: Assign priority (critical/high/medium/low) to tracks for better organization
+- **Blocker Tracking**: Mark tasks as blocked with `[!]` marker and track reasons
+- **Project Validation**: `/conductor:validate` checks integrity and offers auto-fixes
+- **Skip Tasks**: `/conductor:skip` to skip tasks with reasons
+- **Archive Tracks**: `/conductor:archive` to clean up completed tracks
+- **Export Summary**: `/conductor:export` generates comprehensive project reports
+
+### Improvements
+- **Enhanced Status Display**: Priority grouping, dependency visualization, blocker listing
+- **Single Source Workflows**: Core logic in `workflows/` directory for consistency
+- **Better Resume**: Detailed state tracking with phase, task index, and timestamps
+- **Schema Validation**: JSON schemas for all state files
 
 ## Legal
 

@@ -46,7 +46,32 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
             -   Announce: "No incomplete tracks found in the tracks file. All tasks are completed!"
             -   Halt the process and await further user instructions.
 
+4a. **Check Dependencies:**
+    - Read the selected track's `conductor/tracks/<track_id>/metadata.json`
+    - Check if `depends_on` array exists and is not empty
+    - For each track_id in `depends_on`:
+        - Check its status in `conductor/tracks.md`
+        - If status is NOT `[x]` (completed), add to blocked_by list
+    - If blocked_by list is not empty:
+        - Announce: "⚠️ This track has incomplete dependencies:"
+        - List each blocking track with its description
+        - Ask: "Do you want to proceed anyway? (yes/no)
+          > A) Yes - Proceed despite incomplete dependencies
+          > B) No - Implement dependencies first"
+        - If user chooses B, suggest running `/conductor:implement <first_dependency>`
+
 5.  **Handle No Selection:** If no track is selected, inform the user and await further instructions.
+
+6.  **Check Dependencies (Final Verification):**
+    a. Read the selected track's `conductor/tracks/<track_id>/metadata.json`
+    b. If `depends_on` array is not empty:
+        - For each dependency track_id, check if its status is "completed" (marked `[x]`) in `conductor/tracks.md`
+        - If ANY dependency is NOT completed:
+            - Announce: "⚠️ This track depends on incomplete tracks:"
+            - List the incomplete dependencies with their current status
+            - Ask: "Do you want to proceed anyway? (yes/no)"
+            - If no, halt and suggest: "Consider implementing these tracks first: [list of incomplete dependencies]"
+            - If yes, proceed with a warning that dependencies are incomplete
 
 ---
 
@@ -67,15 +92,47 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         - `conductor/workflow.md`
     c. **Error Handling:** If you fail to read any of these files, you MUST stop and inform the user of the error.
 
-4.  **Execute Tasks and Update Track Plan:**
+4.  **Check and Load Resume State:**
+    a. **Check for State File:** Check if `conductor/tracks/<track_id>/implement_state.json` exists.
+    b. **If exists:**
+        - Read the state file content
+        - Announce: "Resuming implementation from [current_phase] - Task [current_task_index + 1]"
+        - Skip to the task indicated by `current_task_index`
+    c. **If not exists:**
+        - Create initial state file:
+        ```json
+        {
+          "current_phase": "",
+          "current_task_index": 0,
+          "current_subtask_index": 0,
+          "last_updated": "<current_timestamp>",
+          "status": "starting"
+        }
+        ```
+
+5.  **Execute Tasks and Update Track Plan:**
     a. **Announce:** State that you will now execute the tasks from the track's `plan.md` by following the procedures in `workflow.md`.
     b. **Iterate Through Tasks:** You MUST now loop through each task in the track's `plan.md` one by one.
     c. **For Each Task, You MUST:**
         i. **Defer to Workflow:** The `workflow.md` file is the **single source of truth** for the entire task lifecycle. You MUST now read and execute the procedures defined in the "Task Workflow" section of the `workflow.md` file you have in your context. Follow its steps for implementation, testing, and committing precisely.
+        ii. **Update Implementation State:** After marking task in progress, update `implement_state.json`:
+            - Set `current_phase` to the current phase name
+            - Set `current_task_index` to the current task number
+            - Set `last_updated` to current timestamp
+            - Set `status` to "in_progress"
+    d. **Handle Blocked Tasks:**
+        - If a task is marked with `[!]`, announce: "⚠️ Task is blocked: [reason]"
+        - Ask user:
+          > "This task is marked as blocked. What would you like to do?
+          > A) Skip this task and continue
+          > B) Mark as unblocked and proceed with implementation
+          > C) Stop implementation here"
+        - If B, change `[!]` to `[~]` and proceed
 
-5.  **Finalize Track:**
+6.  **Finalize Track:**
     -   After all tasks in the track's local `plan.md` are completed, you MUST update the track's status in the tracks file.
     -   This requires finding the specific heading for the track (e.g., `## [~] Track: <Description>`) and replacing it with the completed status (e.g., `## [x] Track: <Description>`).
+    -   **Clean Up State:** Delete the `conductor/tracks/<track_id>/implement_state.json` file as implementation is complete.
     -   Announce that the track is fully complete and the tracks file has been updated.
 
 ---

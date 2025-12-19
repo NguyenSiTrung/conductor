@@ -9,6 +9,21 @@
 5. **User Experience First:** Every decision should prioritize user experience
 6. **Non-Interactive & CI-Aware:** Prefer non-interactive commands. Use `CI=true` for watch-mode tools (tests, linters) to ensure single execution.
 
+## Status Markers
+
+- `[ ]` - Pending/New
+- `[~]` - In Progress  
+- `[x]` - Completed
+- `[!]` - Blocked (with reason)
+
+### Blocker Format
+When a task is blocked, use: `- [!] Task name [BLOCKED: reason]`
+
+Example:
+```markdown
+- [!] Integrate payment API [BLOCKED: Waiting for API credentials from vendor]
+```
+
 ## Task Workflow
 
 All tasks follow a strict lifecycle:
