@@ -23,6 +23,11 @@ The extension is defined in `gemini-extension.json` and provides slash commands 
 | `/conductor:implement` | `implement.toml` | Execute tasks from current track's plan following TDD workflow |
 | `/conductor:status` | `status.toml` | Display progress overview from tracks.md |
 | `/conductor:revert` | `revert.toml` | Git-aware revert of tracks, phases, or tasks |
+| `/conductor:validate` | `validate.toml` | Validate project integrity and fix issues |
+| `/conductor:block` | `block.toml` | Mark task as blocked with reason |
+| `/conductor:skip` | `skip.toml` | Skip current task with justification |
+| `/conductor:archive` | `archive.toml` | Archive completed tracks |
+| `/conductor:export` | `export.toml` | Generate project summary export |
 
 ### Generated Artifacts (in user projects)
 When users run Conductor, it creates:
@@ -83,10 +88,24 @@ A Claude Code implementation is available in `.claude/`:
 /conductor-implement [id]     # Execute track tasks
 /conductor-status             # Show progress
 /conductor-revert             # Git-aware revert
+/conductor-validate           # Validate project integrity
+/conductor-block              # Mark task as blocked
+/conductor-skip               # Skip current task
+/conductor-archive            # Archive completed tracks
+/conductor-export             # Generate project summary
 ```
 
 ### Skill (Model-Invoked)
 The skill in `.claude/skills/conductor/` automatically activates when Claude detects a `conductor/` directory or related context.
+
+Skill structure:
+```
+.claude/skills/conductor/
+├── SKILL.md              # Core skill definition
+└── references/
+    ├── workflows.md      # Detailed command workflows
+    └── structure.md      # Directory layout and status markers
+```
 
 ### Installation
 Copy `.claude/` to any project to enable Conductor commands, or copy commands to `~/.claude/commands/` for global access.

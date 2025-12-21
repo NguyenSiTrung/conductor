@@ -61,7 +61,8 @@ For CLIs supporting the [Agent Skills specification](https://agentskills.io), po
 skills/conductor/
 ├── SKILL.md
 └── references/
-    └── workflows.md
+    ├── workflows.md    # Detailed command workflows
+    └── structure.md    # Directory layout and status markers
 ```
 
 ### Project-Local Installation
