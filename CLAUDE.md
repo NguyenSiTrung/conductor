@@ -26,6 +26,7 @@ The extension is defined in `gemini-extension.json` and provides slash commands 
 | `/conductor:validate` | `validate.toml` | Validate project integrity and fix issues |
 | `/conductor:block` | `block.toml` | Mark task as blocked with reason |
 | `/conductor:skip` | `skip.toml` | Skip current task with justification |
+| `/conductor:revise` | `revise.toml` | Update spec/plan when implementation reveals issues |
 | `/conductor:archive` | `archive.toml` | Archive completed tracks |
 | `/conductor:export` | `export.toml` | Generate project summary export |
 
@@ -91,6 +92,7 @@ A Claude Code implementation is available in `.claude/`:
 /conductor-validate           # Validate project integrity
 /conductor-block              # Mark task as blocked
 /conductor-skip               # Skip current task
+/conductor-revise             # Update spec/plan when issues found
 /conductor-archive            # Archive completed tracks
 /conductor-export             # Generate project summary
 ```

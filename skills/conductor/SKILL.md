@@ -7,7 +7,7 @@ description: |
   - Files like `conductor/tracks.md`, `conductor/product.md`, `conductor/workflow.md` exist
   - User asks about project status, implementation progress, or track management
   - User wants to organize development work with TDD practices
-  - User invokes `/conductor-*` commands (setup, newtrack, implement, status, revert, validate, block, skip, archive, export)
+  - User invokes `/conductor-*` commands (setup, newtrack, implement, status, revert, validate, block, skip, revise, archive, export)
   
   Interoperable with Gemini CLI extension and Claude Code commands.
 ---
@@ -55,6 +55,7 @@ For active tracks, also load:
 | "Check for issues" | `/conductor-validate` |
 | "This is blocked" | `/conductor-block` |
 | "Skip this task" | `/conductor-skip` |
+| "This needs revision" / "Spec is wrong" | `/conductor-revise` |
 | "Archive completed" | `/conductor-archive` |
 | "Export summary" | `/conductor-export` |
 

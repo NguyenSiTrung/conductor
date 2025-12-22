@@ -14,6 +14,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 - [Workflow: Validate](#workflow-validate)
 - [Workflow: Block](#workflow-block)
 - [Workflow: Skip](#workflow-skip)
+- [Workflow: Revise](#workflow-revise)
 - [Workflow: Archive](#workflow-archive)
 - [Workflow: Export](#workflow-export)
 - [State Files Reference](#state-files-reference)
@@ -39,6 +40,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 | `/conductor-validate` | Run validation checks on project structure and state |
 | `/conductor-block` | Mark current task/track as blocked with reason |
 | `/conductor-skip` | Skip current task with justification |
+| `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor-archive` | Archive completed tracks |
 | `/conductor-export` | Export project summary |
 
@@ -231,15 +233,42 @@ For each incomplete task in plan.md:
    - Run tests, confirm pass
    - Refactor if needed
 
-3. **Commit Changes**:
+3. **Self-Check & Issue Handling**:
+   - Run tests, linting, type checks
+   - If issues found, analyze the root cause:
+   
+   **Issue Analysis Decision Tree:**
+   ```
+   Issue Found
+       │
+       ├─→ Implementation bug? (typo, logic error, missing import)
+       │       → Fix it and continue
+       │
+       ├─→ Spec issue? (requirement wrong, missing, or impossible)
+       │       → Trigger Revise workflow for spec
+       │       → Update spec.md, log in revisions.md
+       │       → Then fix implementation
+       │
+       ├─→ Plan issue? (missing task, wrong order, task too big)
+       │       → Trigger Revise workflow for plan
+       │       → Update plan.md, log in revisions.md
+       │       → Then continue with updated plan
+       │
+       └─→ Blocked? (external dependency, need user input)
+               → Mark as blocked, suggest /conductor-block
+   ```
+   
+   **Agent must announce**: "This issue reveals [spec/plan problem | implementation bug]. [Triggering revision | Fixing directly]."
+
+4. **Commit Changes**:
    ```bash
    git add .
    git commit -m "feat(<scope>): <description>"
    ```
 
-4. **Update Plan**: Change `[~]` to `[x]`, append commit SHA (first 7 chars)
+5. **Update Plan**: Change `[~]` to `[x]`, append commit SHA (first 7 chars)
 
-5. **Commit Plan Update**:
+6. **Commit Plan Update**:
    ```bash
    git add conductor/
    git commit -m "conductor(plan): Mark task complete"
@@ -471,6 +500,123 @@ Append to `conductor/tracks/<track_id>/skipped.md` (create if needed):
 
 ---
 
+## Workflow: Revise
+
+**Trigger:** `/conductor-revise`
+
+Use this command when implementation reveals issues, requirements change, or the plan needs adjustment mid-track.
+
+### 1. Identify Active Track
+- Find current track (marked `[~]` in tracks.md)
+- If no active track, ask user which track to revise
+- Load `spec.md` and `plan.md` for context
+
+### 2. Determine Revision Type
+Ask user what needs revision:
+
+```
+What needs to be revised?
+1. Spec - Requirements changed or were misunderstood
+2. Plan - Tasks need to be added, removed, or modified
+3. Both - Significant scope change affecting spec and plan
+```
+
+### 3. Gather Revision Context
+Ask targeted questions based on revision type:
+
+**For Spec Revisions:**
+- What was discovered during implementation?
+- Which requirements were wrong/incomplete?
+- Are there new requirements to add?
+- Should any requirements be removed?
+
+**For Plan Revisions:**
+- Which tasks are affected?
+- Are there new tasks to add?
+- Should any tasks be removed or reordered?
+- Do task estimates need adjustment?
+
+### 4. Create Revision Record
+Create/append to `conductor/tracks/<track_id>/revisions.md`:
+
+```markdown
+## Revision [N] - [Date]
+
+**Type:** Spec | Plan | Both
+**Trigger:** [What prompted the revision]
+**Phase:** [Current phase when revision occurred]
+**Task:** [Current task when revision occurred]
+
+### Changes Made
+
+#### Spec Changes
+- [List of spec changes]
+
+#### Plan Changes
+- Added: [new tasks]
+- Removed: [removed tasks]
+- Modified: [changed tasks]
+
+### Rationale
+[Why these changes were necessary]
+
+### Impact
+- Tasks affected: [count]
+- Estimated effort change: [increase/decrease/same]
+```
+
+### 5. Update Spec (if applicable)
+1. Present proposed changes to `spec.md`
+2. Ask for approval
+3. Apply changes
+4. Add revision marker at top of spec:
+   ```markdown
+   > **Last Revised:** [Date] - See [revisions.md](revisions.md) for history
+   ```
+
+### 6. Update Plan (if applicable)
+1. Present proposed changes to `plan.md`
+2. Ask for approval
+3. Apply changes:
+   - New tasks: Insert at appropriate position with `[ ]`
+   - Removed tasks: Mark as `[-] [REMOVED: reason]`
+   - Modified tasks: Update description, keep status
+4. Add revision marker at top of plan:
+   ```markdown
+   > **Last Revised:** [Date] - See [revisions.md](revisions.md) for history
+   ```
+
+### 7. Update Implementation State
+If `implement_state.json` exists, update:
+```json
+{
+  "last_revision": "ISO timestamp",
+  "revision_count": n,
+  "tasks_added": n,
+  "tasks_removed": n
+}
+```
+
+### 8. Commit Revision
+```bash
+git add conductor/tracks/<track_id>/
+git commit -m "conductor(revise): Update spec/plan for <track_id>
+
+Revision #N: [brief description]
+- [key changes]"
+```
+
+### 9. Announce
+```
+Revision complete for track `<track_id>`:
+- Spec: [updated/unchanged]
+- Plan: [+N tasks, -M tasks, ~P modified]
+
+Run `/conductor-implement` to continue with updated plan.
+```
+
+---
+
 ## Workflow: Archive
 
 **Trigger:** `/conductor-archive`
@@ -600,6 +746,7 @@ Save to `conductor/exports/summary_YYYYMMDD.[md|json|html]`
 | `conductor/tracks/<id>/implement_state.json` | Implementation resume state |
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
+| `conductor/tracks/<id>/revisions.md` | Revision history log |
 | `conductor/archive/` | Archived completed tracks |
 | `conductor/exports/` | Exported summaries |
 

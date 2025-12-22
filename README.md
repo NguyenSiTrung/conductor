@@ -178,6 +178,7 @@ Throughout conductor files:
 | `/conductor:validate` | `/conductor-validate` | Validate project integrity, find orphan tracks, fix issues |
 | `/conductor:block` | `/conductor-block` | Mark a task as blocked with a reason |
 | `/conductor:skip` | `/conductor-skip` | Skip current task and move to next |
+| `/conductor:revise` | `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor:archive` | `/conductor-archive` | Archive completed tracks to `conductor/archive/` |
 | `/conductor:export` | `/conductor-export` | Generate comprehensive project summary as markdown |
 

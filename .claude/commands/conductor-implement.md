@@ -122,13 +122,38 @@ Implement track: $ARGUMENTS
         - Set `status` to "in_progress"
 
    d. **Handle Blocked Tasks:**
-      - If task marked `[!]`:
-        > "⚠️ Task is blocked: [reason]"
-        > "What would you like to do?"
-        > A) Skip this task and continue
-        > B) Mark as unblocked and proceed
-        > C) Stop implementation here
-      - If B: Change `[!]` to `[~]` and proceed
+       - If task marked `[!]`:
+         > "⚠️ Task is blocked: [reason]"
+         > "What would you like to do?"
+         > A) Skip this task and continue
+         > B) Mark as unblocked and proceed
+         > C) Stop implementation here
+       - If B: Change `[!]` to `[~]` and proceed
+
+   e. **Self-Check & Issue Handling:**
+      - After implementation, run tests, linting, type checks
+      - If issues found, analyze the root cause:
+      
+      **Issue Analysis Decision Tree:**
+      
+      | Issue Type | Indicators | Action |
+      |------------|------------|--------|
+      | **Implementation Bug** | Typo, logic error, missing import, test assertion wrong | Fix directly and continue |
+      | **Spec Issue** | Requirement wrong, missing, impossible, edge case not covered | Trigger Revise workflow for spec → update spec.md → log in revisions.md → then fix |
+      | **Plan Issue** | Missing task, wrong order, task too big/small, dependency missing | Trigger Revise workflow for plan → update plan.md → log in revisions.md → continue |
+      | **Blocked** | External dependency, need user input, waiting on API | Mark as blocked, suggest `/conductor-block` |
+      
+      **Agent MUST announce:** "This issue reveals [spec/plan problem | implementation bug]. [Triggering revision | Fixing directly]."
+      
+      **For Spec/Plan Issues:**
+      1. Create/append to `conductor/tracks/<track_id>/revisions.md` with:
+         - Revision number, date, type (Spec/Plan/Both)
+         - What triggered the revision
+         - Current phase/task when issue occurred
+         - Changes made and rationale
+      2. Update the relevant document (spec.md or plan.md)
+      3. Add "Last Revised" marker at top of updated file
+      4. Commit revision before continuing
 
 6. **Finalize Track:**
    - After all tasks complete, update `conductor/tracks.md`: `## [~]` → `## [x]`
