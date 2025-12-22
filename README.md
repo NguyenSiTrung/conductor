@@ -245,7 +245,9 @@ workflows/
 
 ## Resources
 
+- [Manual Workflow Guide](docs/manual-workflow-guide.md): Step-by-step guide for using commands without skills
 - [Claude Code README](.claude/README.md): Detailed Claude Code installation and usage
+- [Workflow Definitions](workflows/README.md): Single source of truth for workflow logic
 - [Gemini CLI extensions](https://geminicli.com/docs/extensions/): Gemini CLI documentation
 - [Agent Skills specification](https://agentskills.io): Open standard for AI agent skills
 - [GitHub issues](https://github.com/gemini-cli-extensions/conductor/issues): Report bugs or request features
@@ -259,8 +261,10 @@ workflows/
 - **Blocker Tracking**: Mark tasks as blocked with `[!]` marker and track reasons
 - **Project Validation**: `/conductor:validate` checks integrity and offers auto-fixes
 - **Skip Tasks**: `/conductor:skip` to skip tasks with reasons
+- **Revise Plans**: `/conductor:revise` to update spec/plan when implementation reveals issues
 - **Archive Tracks**: `/conductor:archive` to clean up completed tracks
 - **Export Summary**: `/conductor:export` generates comprehensive project reports
+- **Context Refresh**: `/conductor:refresh` to sync context docs with current codebase state
 
 ### Improvements
 - **Enhanced Status Display**: Priority grouping, dependency visualization, blocker listing
