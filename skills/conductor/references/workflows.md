@@ -17,6 +17,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 - [Workflow: Revise](#workflow-revise)
 - [Workflow: Archive](#workflow-archive)
 - [Workflow: Export](#workflow-export)
+- [Workflow: Refresh](#workflow-refresh)
 - [State Files Reference](#state-files-reference)
 - [Status Markers](#status-markers)
 
@@ -43,6 +44,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 | `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor-archive` | Archive completed tracks |
 | `/conductor-export` | Export project summary |
+| `/conductor-refresh [scope]` | Sync context docs with current codebase state |
 
 ---
 
@@ -397,19 +399,45 @@ For each track in `conductor/tracks/`:
 - Check for unpushed commits
 - Verify commit history integrity for tracked tasks
 
-### 5. Present Report
+### 5. Context Staleness Check
+1. **Check setup age:**
+   - Read `conductor/setup_state.json` for setup date
+   - If >2 days old, flag as potentially stale
+
+2. **Check refresh state:**
+   - Read `conductor/refresh_state.json` if exists
+   - If `next_refresh_hint` is past, flag for refresh
+
+3. **Detect dependency drift:**
+   - Compare `package.json`/`requirements.txt`/etc. modification dates against `tech-stack.md`
+   - If dependency files newer, flag potential drift
+
+4. **Detect shipped features:**
+   - Count completed tracks `[x]` since last refresh
+   - If >3 completed tracks, suggest product.md refresh
+
+5. **Detect workflow changes:**
+   - Check for new/modified CI/CD files since last refresh
+   - Flag if `.github/workflows/` or similar has changes
+
+### 6. Present Report
 ```
 ## Validation Report
 
 **Structure:** ✓ Valid / ✗ Issues found
 **Tracks:** [n] total, [x] valid, [y] issues
 **State:** ✓ Consistent / ✗ Inconsistent
+**Context Freshness:** ✓ Current / ⚠ Stale (N days since refresh)
 
 ### Issues Found
 - [List any problems detected]
 
+### Staleness Warnings
+- [List any context drift detected]
+
 ### Recommendations
 - [Suggested fixes]
+- [If stale: "Run `/conductor-refresh` to sync context with codebase"]
 ```
 
 ---
@@ -731,6 +759,156 @@ Save to `conductor/exports/summary_YYYYMMDD.[md|json|html]`
 
 ---
 
+## Workflow: Refresh
+
+**Trigger:** `/conductor-refresh [scope]`
+
+Use this command when context documentation has become stale due to codebase evolution, new dependencies, or shipped features.
+
+### 1. Determine Scope
+
+If scope argument provided, use it. Otherwise, ask:
+
+```
+What would you like to refresh?
+1. all - Full refresh of all context documents
+2. tech - Update tech-stack.md (dependencies, frameworks, tools)
+3. product - Update product.md (shipped features, evolved goals)
+4. workflow - Update workflow.md (process changes)
+5. track [id] - Refresh specific track's spec/plan
+```
+
+### 2. Analyze Current State
+
+**For `tech` scope:**
+1. Read current `conductor/tech-stack.md`
+2. Scan codebase for:
+   - `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`
+   - New directories/modules not documented
+   - Removed dependencies still documented
+3. Compare and identify drift
+
+**For `product` scope:**
+1. Read current `conductor/product.md`
+2. Analyze:
+   - Completed tracks in `conductor/tracks.md` (shipped features)
+   - README.md changes
+   - New major components or features
+3. Identify features shipped but not in product.md
+
+**For `workflow` scope:**
+1. Read current `conductor/workflow.md`
+2. Check for:
+   - New CI/CD configurations (`.github/workflows/`, etc.)
+   - New linting/testing tools
+   - Changed commit conventions
+3. Identify process drift
+
+**For `track` scope:**
+1. Load specified track's spec.md and plan.md
+2. Compare against actual implementation
+3. Identify completed items not marked, or spec drift
+
+**For `all` scope:**
+- Run all of the above analyses
+
+### 3. Generate Drift Report
+
+Present findings to user:
+
+```markdown
+## Context Refresh Analysis
+
+**Last setup:** [date from setup_state.json]
+**Days since setup:** [N days]
+
+### Tech Stack Drift
+- **Added:** [new packages/frameworks detected]
+- **Removed:** [packages in docs but not in codebase]
+- **Version changes:** [major version updates]
+
+### Product Drift  
+- **Shipped features:** [completed tracks not in product.md]
+- **New components:** [directories/modules not documented]
+- **Goal evolution:** [detected scope changes]
+
+### Workflow Drift
+- **New tools:** [CI/CD, linting, testing additions]
+- **Process changes:** [detected convention changes]
+
+### Recommended Updates
+1. [Specific update 1]
+2. [Specific update 2]
+...
+```
+
+### 4. Confirm Updates
+
+Ask user:
+```
+Apply these updates?
+1. All recommended updates
+2. Select specific updates
+3. Cancel
+```
+
+### 5. Apply Updates
+
+For each confirmed update:
+
+1. **Create backup** (for rollback):
+   ```bash
+   cp conductor/<file>.md conductor/<file>.md.bak
+   ```
+
+2. **Apply changes** to relevant files:
+   - Update sections with new information
+   - Mark deprecated items
+   - Add revision timestamp
+
+3. **Add refresh marker** at top of updated files:
+   ```markdown
+   > **Last Refreshed:** [Date] - Context synced with codebase
+   ```
+
+### 6. Update Refresh State
+
+Create/update `conductor/refresh_state.json`:
+```json
+{
+  "last_refresh": "ISO timestamp",
+  "scope": "all|tech|product|workflow|track",
+  "changes_applied": [
+    {"file": "tech-stack.md", "changes": ["added X", "removed Y"]},
+    ...
+  ],
+  "next_refresh_hint": "ISO timestamp (2 days from now)"
+}
+```
+
+### 7. Commit Changes
+
+```bash
+git add conductor/
+git commit -m "conductor(refresh): Sync context with codebase
+
+Scope: [scope]
+- [key changes summary]"
+```
+
+### 8. Announce
+
+```
+Context refresh complete:
+- tech-stack.md: [updated/unchanged]
+- product.md: [updated/unchanged]  
+- workflow.md: [updated/unchanged]
+
+Next suggested refresh: [date 2 days from now]
+```
+
+---
+
 ## State Files Reference
 
 | File | Purpose |
@@ -747,6 +925,7 @@ Save to `conductor/exports/summary_YYYYMMDD.[md|json|html]`
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
 | `conductor/tracks/<id>/revisions.md` | Revision history log |
+| `conductor/refresh_state.json` | Context refresh tracking |
 | `conductor/archive/` | Archived completed tracks |
 | `conductor/exports/` | Exported summaries |
 

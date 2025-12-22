@@ -78,3 +78,15 @@ These require manual intervention:
 - Missing required track files (spec.md, plan.md)
 - Invalid JSON structure
 - Empty plan (no phases/tasks)
+
+## Context Staleness Checks
+
+Added to validation (suggests `/conductor-refresh` if detected):
+
+| Check | Threshold | Action |
+|-------|-----------|--------|
+| Setup age | > 2 days | Flag as potentially stale |
+| Refresh state | `next_refresh_hint` in past | Flag for refresh |
+| Dependency drift | Dependency files newer than `tech-stack.md` | Flag potential drift |
+| Shipped features | > 3 completed tracks since refresh | Suggest product.md refresh |
+| Workflow changes | CI/CD files modified since refresh | Flag workflow drift |

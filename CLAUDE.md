@@ -29,6 +29,7 @@ The extension is defined in `gemini-extension.json` and provides slash commands 
 | `/conductor:revise` | `revise.toml` | Update spec/plan when implementation reveals issues |
 | `/conductor:archive` | `archive.toml` | Archive completed tracks |
 | `/conductor:export` | `export.toml` | Generate project summary export |
+| `/conductor:refresh` | `refresh.toml` | Sync context docs with current codebase state |
 
 ### Generated Artifacts (in user projects)
 When users run Conductor, it creates:
@@ -40,12 +41,14 @@ conductor/
 ├── workflow.md          # Development workflow (TDD, commits)
 ├── tracks.md            # Master track list with status
 ├── setup_state.json     # Resume state for setup
+├── refresh_state.json   # Context refresh tracking
 ├── code_styleguides/    # Language-specific style guides
 └── tracks/
     └── <track_id>/
         ├── metadata.json
         ├── spec.md      # Requirements
-        └── plan.md      # Phased task list
+        ├── plan.md      # Phased task list
+        └── revisions.md # Revision history log
 ```
 
 ### Templates (in `templates/`)
@@ -95,6 +98,7 @@ A Claude Code implementation is available in `.claude/`:
 /conductor-revise             # Update spec/plan when issues found
 /conductor-archive            # Archive completed tracks
 /conductor-export             # Generate project summary
+/conductor-refresh            # Sync context docs with codebase
 ```
 
 ### Skill (Model-Invoked)

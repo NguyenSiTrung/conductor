@@ -181,6 +181,7 @@ Throughout conductor files:
 | `/conductor:revise` | `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor:archive` | `/conductor-archive` | Archive completed tracks to `conductor/archive/` |
 | `/conductor:export` | `/conductor-export` | Generate comprehensive project summary as markdown |
+| `/conductor:refresh` | `/conductor-refresh` | Sync context docs with current codebase state |
 
 Projects set up with either tool are fully interoperable.
 
@@ -194,6 +195,7 @@ conductor/
 ├── workflow.md             # Development standards (TDD, commits, coverage)
 ├── tracks.md               # Master track list with status markers
 ├── setup_state.json        # Setup progress tracking
+├── refresh_state.json      # Context refresh tracking
 ├── code_styleguides/       # Language-specific style guides
 ├── archive/                # Archived completed tracks
 └── tracks/
@@ -201,6 +203,7 @@ conductor/
         ├── metadata.json   # Track type, status, priority, dependencies
         ├── spec.md         # Requirements and acceptance criteria
         ├── plan.md         # Phased task list with status
+        ├── revisions.md    # Revision history log
         └── implement_state.json  # Resume state (auto-managed)
 ```
 

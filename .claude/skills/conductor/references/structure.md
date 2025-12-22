@@ -10,6 +10,7 @@ conductor/
 ├── workflow.md             # Development standards (TDD, commits, coverage)
 ├── tracks.md               # Master track list with status markers
 ├── setup_state.json        # Setup progress tracking
+├── refresh_state.json      # Context refresh tracking (created by /conductor-refresh)
 ├── code_styleguides/       # Language-specific style guides
 ├── archive/                # Archived completed tracks
 ├── exports/                # Exported summaries
@@ -20,7 +21,8 @@ conductor/
         ├── plan.md         # Phased task list with status
         ├── implement_state.json  # Implementation resume state (if in progress)
         ├── blockers.md     # Block history log (if any)
-        └── skipped.md      # Skipped tasks log (if any)
+        ├── skipped.md      # Skipped tasks log (if any)
+        └── revisions.md    # Revision history log (if any)
 ```
 
 ## Status Markers
@@ -50,6 +52,8 @@ Throughout conductor files:
 | `conductor/tracks/<id>/implement_state.json` | Implementation resume state |
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
+| `conductor/tracks/<id>/revisions.md` | Revision history log |
+| `conductor/refresh_state.json` | Context refresh tracking |
 | `conductor/archive/` | Archived completed tracks |
 | `conductor/exports/` | Exported summaries |
 
@@ -65,5 +69,6 @@ The only differences are command syntax:
 | `/conductor:implement` | `/conductor-implement` |
 | `/conductor:status` | `/conductor-status` |
 | `/conductor:revert` | `/conductor-revert` |
+| `/conductor:refresh` | `/conductor-refresh` |
 
 Files, workflows, and state management are fully compatible.

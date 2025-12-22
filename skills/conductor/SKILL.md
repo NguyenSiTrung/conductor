@@ -7,7 +7,8 @@ description: |
   - Files like `conductor/tracks.md`, `conductor/product.md`, `conductor/workflow.md` exist
   - User asks about project status, implementation progress, or track management
   - User wants to organize development work with TDD practices
-  - User invokes `/conductor-*` commands (setup, newtrack, implement, status, revert, validate, block, skip, revise, archive, export)
+  - User invokes `/conductor-*` commands (setup, newtrack, implement, status, revert, validate, block, skip, revise, archive, export, refresh)
+  - User mentions documentation is outdated or wants to sync context with codebase changes
   
   Interoperable with Gemini CLI extension and Claude Code commands.
 ---
@@ -42,6 +43,7 @@ For active tracks, also load:
 2. **On task completion**: Suggest next task or phase verification
 3. **On blocked detection**: Alert user and suggest alternatives
 4. **On all tasks complete**: Congratulate and offer archive/cleanup
+5. **On stale context detected**: If setup >2 days old or significant codebase changes detected, suggest `/conductor-refresh`
 
 ## Intent Mapping
 
@@ -58,6 +60,7 @@ For active tracks, also load:
 | "This needs revision" / "Spec is wrong" | `/conductor-revise` |
 | "Archive completed" | `/conductor-archive` |
 | "Export summary" | `/conductor-export` |
+| "Docs are outdated" / "Sync with codebase" | `/conductor-refresh` |
 
 ## References
 
