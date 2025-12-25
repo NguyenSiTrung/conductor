@@ -6,48 +6,48 @@ This guide explains how to work with Conductor commands manually without relying
 
 ```mermaid
 flowchart TD
-    subgraph SETUP["🚀 Setup (Once)"]
-        A[Project] --> B["/conductor:setup"]
-        B --> C["Context Files Created"]
+    subgraph SETUP[Setup - Once]
+        A[Project] --> B[/conductor:setup]
+        B --> C[Context Files Created]
     end
 
-    subgraph TRACK["📋 Per Track"]
-        C --> D["/conductor:newtrack"]
-        D --> E["spec.md + plan.md"]
+    subgraph TRACK[Per Track]
+        C --> D[/conductor:newtrack]
+        D --> E[spec.md + plan.md]
         E --> F{Approve?}
-        F -->|Revise| G["/conductor:revise"]
+        F -->|Revise| G[/conductor:revise]
         G --> E
-        F -->|Yes| H["/conductor:implement"]
+        F -->|Yes| H[/conductor:implement]
     end
 
-    subgraph IMPL["⚡ Implementation Loop"]
-        H --> I["Execute Task"]
+    subgraph IMPL[Implementation Loop]
+        H --> I[Execute Task]
         I --> J{Complete?}
-        J -->|Yes| K["Mark [x]"]
+        J -->|Yes| K[Mark done]
         K --> L{More Tasks?}
         L -->|Yes| M{5+ Done?}
-        M -->|Yes| N["/conductor:handoff"]
-        N --> O["New Session"]
+        M -->|Yes| N[/conductor:handoff]
+        N --> O[New Session]
         O --> H
         M -->|No| I
-        L -->|No| P["Track Done ✅"]
+        L -->|No| P[Track Done]
     end
 
-    subgraph ISSUES["⚠️ Handle Issues"]
-        J -->|Blocked| Q["/conductor:block"]
-        Q --> R["/conductor:skip"]
+    subgraph ISSUES[Handle Issues]
+        J -->|Blocked| Q[/conductor:block]
+        Q --> R[/conductor:skip]
         R --> I
     end
 
-    subgraph DONE["🎉 Cleanup"]
-        P --> S["/conductor:archive"]
-        P --> T["/conductor:export"]
+    subgraph DONE[Cleanup]
+        P --> S[/conductor:archive]
+        P --> T[/conductor:export]
         S --> U{New Track?}
         U -->|Yes| D
     end
 
-    H -.-> V["/conductor:status"]
-    H -.-> W["/conductor:validate"]
+    H -.-> V[/conductor:status]
+    H -.-> W[/conductor:validate]
 ```
 
 ### Quick Reference

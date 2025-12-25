@@ -165,49 +165,49 @@ Throughout conductor files:
 
 ```mermaid
 flowchart TD
-    subgraph SETUP["🚀 Project Setup"]
-        A[New/Existing Project] --> B["/conductor:setup"]
-        B --> C["Creates context files"]
+    subgraph SETUP[Project Setup]
+        A[New/Existing Project] --> B[/conductor:setup]
+        B --> C[Creates context files]
     end
 
-    subgraph PLANNING["📋 Planning"]
-        C --> D["/conductor:newtrack"]
-        D --> E["spec.md + plan.md"]
+    subgraph PLANNING[Planning]
+        C --> D[/conductor:newtrack]
+        D --> E[spec.md + plan.md]
         E --> F{Approved?}
-        F -->|No| G["/conductor:revise"]
+        F -->|No| G[/conductor:revise]
         G --> E
         F -->|Yes| H[Ready]
     end
 
-    subgraph IMPL["⚡ Implementation"]
-        H --> I["/conductor:implement"]
-        I --> J["Execute Tasks"]
+    subgraph IMPL[Implementation]
+        H --> I[/conductor:implement]
+        I --> J[Execute Tasks]
         J --> K{Done?}
-        K -->|Yes| L["[x] + SHA"]
-        L --> M{More?}
+        K -->|Yes| L[Mark complete]
+        L --> M{More Tasks?}
         M -->|Yes| N{5+ tasks?}
-        N -->|Yes| O["/conductor:handoff"]
-        O --> P["Save Context"]
+        N -->|Yes| O[/conductor:handoff]
+        O --> P[Save Context]
         P --> I
         N -->|No| J
-        M -->|No| Q["Track Complete ✅"]
+        M -->|No| Q[Track Complete]
     end
 
-    subgraph ISSUES["⚠️ Issues"]
-        K -->|Blocked| R["/conductor:block"]
-        R --> S["/conductor:skip"]
+    subgraph ISSUES[Issue Handling]
+        K -->|Blocked| R[/conductor:block]
+        R --> S[/conductor:skip]
         S --> J
-        J -->|Spec Wrong| T["/conductor:revise"]
+        J -->|Spec Wrong| T[/conductor:revise]
         T --> J
     end
 
-    subgraph DONE["🎉 Completion"]
-        Q --> U["/conductor:archive"]
-        Q --> V["/conductor:export"]
+    subgraph DONE[Completion]
+        Q --> U[/conductor:archive]
+        Q --> V[/conductor:export]
     end
 
-    I -.-> W["/conductor:status"]
-    I -.-> X["/conductor:validate"]
+    I -.-> W[/conductor:status]
+    I -.-> X[/conductor:validate]
 ```
 
 ### Quick Reference Patterns
