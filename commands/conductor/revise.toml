@@ -63,7 +63,13 @@ If `implement_state.json` exists, add revision tracking:
 ```json
 {
   "last_revision": "ISO timestamp",
-  "revision_count": n
+  "revision_count": n,
+  "tasks_added": n,
+  "tasks_removed": n,
+  "current_phase": "...",
+  "current_phase_index": 0,
+  "current_task_index": 0,
+  "completed_phases": []
 }
 ```
 

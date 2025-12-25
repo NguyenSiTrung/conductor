@@ -92,16 +92,17 @@ Implement track: $ARGUMENTS
 
    **If exists:**
    - Read state file
-   - Announce: "Resuming implementation from [current_phase] - Task [current_task_index + 1]"
-   - Skip to indicated task
+   - Announce: "Resuming implementation from [current_phase] (Phase [current_phase_index + 1]) - Task [current_task_index + 1]"
+   - Skip to indicated phase and task within that phase
 
    **If not exists:**
    - Create initial state:
      ```json
      {
        "current_phase": "",
+       "current_phase_index": 0,
        "current_task_index": 0,
-       "current_subtask_index": 0,
+       "completed_phases": [],
        "last_updated": "<current_timestamp>",
        "status": "starting"
      }
@@ -117,9 +118,15 @@ Implement track: $ARGUMENTS
       - **i. Defer to Workflow:** `workflow.md` is the **single source of truth** for task lifecycle. Follow its "Task Workflow" section for implementation, testing, and committing.
       - **ii. Update Implementation State:** After marking task in progress:
         - Set `current_phase` to current phase name
-        - Set `current_task_index` to current task number
+        - Set `current_phase_index` to current phase number (zero-based)
+        - Set `current_task_index` to current task number within the phase (zero-based)
         - Set `last_updated` to current timestamp
         - Set `status` to "in_progress"
+      - **iii. On Phase Completion:** When all tasks in a phase are complete:
+        - Add phase name to `completed_phases` array
+        - Reset `current_task_index` to 0
+        - Increment `current_phase_index`
+        - Update `current_phase` to next phase name
 
    d. **Handle Blocked Tasks:**
        - If task marked `[!]`:

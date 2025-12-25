@@ -19,7 +19,7 @@ conductor/
         ├── metadata.json   # Track type, status, dates
         ├── spec.md         # Requirements and acceptance criteria
         ├── plan.md         # Phased task list with status
-        ├── implement_state.json  # Implementation resume state (if in progress)
+        ├── implement_state.json  # Phase-aware implementation resume state (if in progress)
         ├── blockers.md     # Block history log (if any)
         ├── skipped.md      # Skipped tasks log (if any)
         └── revisions.md    # Revision history log (if any)
@@ -49,7 +49,7 @@ Throughout conductor files:
 | `conductor/tracks/<id>/metadata.json` | Track metadata |
 | `conductor/tracks/<id>/spec.md` | Requirements |
 | `conductor/tracks/<id>/plan.md` | Phased task list |
-| `conductor/tracks/<id>/implement_state.json` | Implementation resume state |
+| `conductor/tracks/<id>/implement_state.json` | Phase-aware implementation resume state |
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
 | `conductor/tracks/<id>/revisions.md` | Revision history log |

@@ -139,7 +139,8 @@ Step 3: Check dependencies
    - Choose to proceed or wait
 
 Step 4: Resume check
-   - If implement_state.json exists, resume from last task
+   - If implement_state.json exists, resume from last phase and task
+   - State tracks: current_phase, current_phase_index, current_task_index, completed_phases
    - Otherwise start from first task
 
 Step 5: For each task, follow TDD workflow:
@@ -163,7 +164,8 @@ Step 7: Track completion
 ```
 
 **State file**: `conductor/tracks/<track_id>/implement_state.json`
-- Tracks current phase and task
+- Tracks current phase (name and index) and task within phase
+- Tracks completed phases in array
 - Enables pause/resume across sessions
 
 **Status markers in plan.md**:
@@ -422,7 +424,7 @@ Step 4: Approve changes
 | File | Purpose | Location |
 |------|---------|----------|
 | `setup_state.json` | Setup progress | `conductor/` |
-| `implement_state.json` | Implementation resume | `conductor/tracks/<id>/` |
+| `implement_state.json` | Phase-aware implementation resume | `conductor/tracks/<id>/` |
 | `refresh_state.json` | Refresh progress | `conductor/` |
 | `metadata.json` | Track configuration | `conductor/tracks/<id>/` |
 

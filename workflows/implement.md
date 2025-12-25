@@ -20,9 +20,11 @@ Execute tasks from a track's plan following the defined workflow methodology (TD
 | Field | Type | Description |
 |-------|------|-------------|
 | `current_phase` | string | Active phase name |
-| `current_task` | string | Active task description |
-| `status` | string | `in_progress`, `paused`, `blocked` |
-| `last_commit_sha` | string | Last implementation commit |
+| `current_phase_index` | integer | Zero-based phase index |
+| `current_task_index` | integer | Zero-based task index within current phase |
+| `completed_phases` | array | List of completed phase names |
+| `status` | string | `starting`, `in_progress`, `paused`, `blocked` |
+| `last_updated` | string | ISO timestamp |
 
 ## Workflow Steps
 
@@ -160,7 +162,7 @@ conductor/
 └── tracks/
     └── <track_id>/
         ├── plan.md (tasks marked complete)
-        └── implement_state.json (optional)
+        └── implement_state.json (phase-aware resume state, optional)
 ```
 
 ## Git Artifacts

@@ -21,7 +21,10 @@ Ask user: "Why are you skipping this task?"
 3. Find next pending task `[ ]` and mark as `[~]`
 
 ## 5.0 UPDATE STATE
-Update `implement_state.json` to point to the new current task.
+Update `implement_state.json` to point to the new current task:
+- Increment `current_task_index` within current phase
+- If moving to new phase: reset `current_task_index` to 0, increment `current_phase_index`, add completed phase to `completed_phases`
+- Set `last_updated` to current timestamp
 
 ## 6.0 ANNOUNCE
 "Skipped task '[name]'. Now working on '[next_task]'."

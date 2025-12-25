@@ -209,16 +209,18 @@ Read into context:
 ### 4. Resume State Management
 
 Check for `conductor/tracks/<track_id>/implement_state.json`:
-- If exists: Resume from saved position
+- If exists: Resume from saved position (phase and task within that phase)
 - If not: Create initial state
 
 State file tracks:
 - `current_phase`: Name of current phase
-- `current_task_index`: Zero-based task index
+- `current_phase_index`: Zero-based phase index
+- `current_task_index`: Zero-based task index within current phase
+- `completed_phases`: Array of completed phase names
 - `status`: "starting" | "in_progress" | "paused"
 - `last_updated`: ISO timestamp
 
-Update state after each task. Delete on completion.
+Update state after each task. On phase completion, add phase to `completed_phases` and reset `current_task_index` to 0. Delete state file on track completion.
 
 ### 5. Update Status
 In `conductor/tracks.md`, change `## [ ] Track:` to `## [~] Track:` for selected track.
@@ -471,7 +473,11 @@ If `implement_state.json` exists, update:
 {
   "status": "blocked",
   "blocked_reason": "...",
-  "blocked_at": "ISO timestamp"
+  "blocked_at": "ISO timestamp",
+  "current_phase": "...",
+  "current_phase_index": 0,
+  "current_task_index": 0,
+  "completed_phases": []
 }
 ```
 
@@ -510,7 +516,8 @@ Change task status in plan.md:
 
 ### 4. Update State
 Move to next task in `implement_state.json`:
-- Increment `current_task_index`
+- Increment `current_task_index` within current phase
+- If moving to new phase: reset `current_task_index` to 0, increment `current_phase_index`, add completed phase to `completed_phases`
 - Log skip in state
 
 ### 5. Log Skip
@@ -621,7 +628,11 @@ If `implement_state.json` exists, update:
   "last_revision": "ISO timestamp",
   "revision_count": n,
   "tasks_added": n,
-  "tasks_removed": n
+  "tasks_removed": n,
+  "current_phase": "...",
+  "current_phase_index": 0,
+  "current_task_index": 0,
+  "completed_phases": []
 }
 ```
 
@@ -921,7 +932,7 @@ Next suggested refresh: [date 2 days from now]
 | `conductor/tracks/<id>/metadata.json` | Track metadata |
 | `conductor/tracks/<id>/spec.md` | Requirements |
 | `conductor/tracks/<id>/plan.md` | Phased task list |
-| `conductor/tracks/<id>/implement_state.json` | Implementation resume state |
+| `conductor/tracks/<id>/implement_state.json` | Implementation resume state (phase-aware) |
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
 | `conductor/tracks/<id>/revisions.md` | Revision history log |
