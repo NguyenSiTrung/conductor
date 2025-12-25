@@ -166,27 +166,27 @@ Throughout conductor files:
 ```mermaid
 flowchart TD
     subgraph SETUP[Project Setup]
-        A[New/Existing Project] --> B[/conductor:setup]
-        B --> C[Creates context files]
+        A[New Project] --> B["setup"]
+        B --> C[Context files]
     end
 
     subgraph PLANNING[Planning]
-        C --> D[/conductor:newtrack]
-        D --> E[spec.md + plan.md]
+        C --> D["newtrack"]
+        D --> E[spec + plan]
         E --> F{Approved?}
-        F -->|No| G[/conductor:revise]
+        F -->|No| G["revise"]
         G --> E
         F -->|Yes| H[Ready]
     end
 
     subgraph IMPL[Implementation]
-        H --> I[/conductor:implement]
+        H --> I["implement"]
         I --> J[Execute Tasks]
         J --> K{Done?}
         K -->|Yes| L[Mark complete]
         L --> M{More Tasks?}
         M -->|Yes| N{5+ tasks?}
-        N -->|Yes| O[/conductor:handoff]
+        N -->|Yes| O["handoff"]
         O --> P[Save Context]
         P --> I
         N -->|No| J
@@ -194,20 +194,20 @@ flowchart TD
     end
 
     subgraph ISSUES[Issue Handling]
-        K -->|Blocked| R[/conductor:block]
-        R --> S[/conductor:skip]
+        K -->|Blocked| R["block"]
+        R --> S["skip"]
         S --> J
-        J -->|Spec Wrong| T[/conductor:revise]
+        J -->|Spec Wrong| T["revise"]
         T --> J
     end
 
     subgraph DONE[Completion]
-        Q --> U[/conductor:archive]
-        Q --> V[/conductor:export]
+        Q --> U["archive"]
+        Q --> V["export"]
     end
 
-    I -.-> W[/conductor:status]
-    I -.-> X[/conductor:validate]
+    I -.-> W["status"]
+    I -.-> X["validate"]
 ```
 
 ### Quick Reference Patterns

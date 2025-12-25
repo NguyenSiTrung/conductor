@@ -7,17 +7,17 @@ This guide explains how to work with Conductor commands manually without relying
 ```mermaid
 flowchart TD
     subgraph SETUP[Setup - Once]
-        A[Project] --> B[/conductor:setup]
-        B --> C[Context Files Created]
+        A[Project] --> B["setup"]
+        B --> C[Context Files]
     end
 
     subgraph TRACK[Per Track]
-        C --> D[/conductor:newtrack]
-        D --> E[spec.md + plan.md]
+        C --> D["newtrack"]
+        D --> E[spec + plan]
         E --> F{Approve?}
-        F -->|Revise| G[/conductor:revise]
+        F -->|Revise| G["revise"]
         G --> E
-        F -->|Yes| H[/conductor:implement]
+        F -->|Yes| H["implement"]
     end
 
     subgraph IMPL[Implementation Loop]
@@ -26,7 +26,7 @@ flowchart TD
         J -->|Yes| K[Mark done]
         K --> L{More Tasks?}
         L -->|Yes| M{5+ Done?}
-        M -->|Yes| N[/conductor:handoff]
+        M -->|Yes| N["handoff"]
         N --> O[New Session]
         O --> H
         M -->|No| I
@@ -34,20 +34,20 @@ flowchart TD
     end
 
     subgraph ISSUES[Handle Issues]
-        J -->|Blocked| Q[/conductor:block]
-        Q --> R[/conductor:skip]
+        J -->|Blocked| Q["block"]
+        Q --> R["skip"]
         R --> I
     end
 
     subgraph DONE[Cleanup]
-        P --> S[/conductor:archive]
-        P --> T[/conductor:export]
+        P --> S["archive"]
+        P --> T["export"]
         S --> U{New Track?}
         U -->|Yes| D
     end
 
-    H -.-> V[/conductor:status]
-    H -.-> W[/conductor:validate]
+    H -.-> V["status"]
+    H -.-> W["validate"]
 ```
 
 ### Quick Reference
