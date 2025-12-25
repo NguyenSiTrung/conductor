@@ -159,6 +159,68 @@ Throughout conductor files:
 - [!] Task name [BLOCKED: Waiting for API credentials]
 ```
 
+## Workflow Diagrams
+
+### Complete Workflow
+
+```mermaid
+flowchart TD
+    subgraph SETUP["🚀 Project Setup"]
+        A[New/Existing Project] --> B["/conductor:setup"]
+        B --> C["Creates context files"]
+    end
+
+    subgraph PLANNING["📋 Planning"]
+        C --> D["/conductor:newtrack"]
+        D --> E["spec.md + plan.md"]
+        E --> F{Approved?}
+        F -->|No| G["/conductor:revise"]
+        G --> E
+        F -->|Yes| H[Ready]
+    end
+
+    subgraph IMPL["⚡ Implementation"]
+        H --> I["/conductor:implement"]
+        I --> J["Execute Tasks"]
+        J --> K{Done?}
+        K -->|Yes| L["[x] + SHA"]
+        L --> M{More?}
+        M -->|Yes| N{5+ tasks?}
+        N -->|Yes| O["/conductor:handoff"]
+        O --> P["Save Context"]
+        P --> I
+        N -->|No| J
+        M -->|No| Q["Track Complete ✅"]
+    end
+
+    subgraph ISSUES["⚠️ Issues"]
+        K -->|Blocked| R["/conductor:block"]
+        R --> S["/conductor:skip"]
+        S --> J
+        J -->|Spec Wrong| T["/conductor:revise"]
+        T --> J
+    end
+
+    subgraph DONE["🎉 Completion"]
+        Q --> U["/conductor:archive"]
+        Q --> V["/conductor:export"]
+    end
+
+    I -.-> W["/conductor:status"]
+    I -.-> X["/conductor:validate"]
+```
+
+### Quick Reference Patterns
+
+| Pattern | Command Flow |
+|---------|--------------|
+| **Happy Path** | `setup` → `newtrack` → `implement` → `archive` |
+| **Multi-Section** | `implement` → *(5+ tasks)* → `handoff` → *(new session)* → `implement` |
+| **Handle Blockers** | `implement` → `block` → `skip` or wait → `implement` |
+| **Mid-Track Changes** | `implement` → `revise` → `implement` |
+| **Monitoring** | `status` / `validate` *(anytime)* |
+| **Context Drift** | `refresh` *(when codebase changed outside Conductor)* |
+
 ## Commands Reference
 
 ### Core Commands
@@ -181,6 +243,7 @@ Throughout conductor files:
 | `/conductor:revise` | `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor:archive` | `/conductor-archive` | Archive completed tracks to `conductor/archive/` |
 | `/conductor:export` | `/conductor-export` | Generate comprehensive project summary as markdown |
+| `/conductor:handoff` | `/conductor-handoff` | Create context handoff for section transfer |
 | `/conductor:refresh` | `/conductor-refresh` | Sync context docs with current codebase state |
 
 Projects set up with either tool are fully interoperable.
@@ -203,6 +266,7 @@ conductor/
         ├── metadata.json   # Track type, status, priority, dependencies
         ├── spec.md         # Requirements and acceptance criteria
         ├── plan.md         # Phased task list with status
+        ├── handoff_*.md    # Section handoff documents
         ├── revisions.md    # Revision history log
         └── implement_state.json  # Resume state (auto-managed)
 ```
@@ -251,6 +315,17 @@ workflows/
 - [Gemini CLI extensions](https://geminicli.com/docs/extensions/): Gemini CLI documentation
 - [Agent Skills specification](https://agentskills.io): Open standard for AI agent skills
 - [GitHub issues](https://github.com/gemini-cli-extensions/conductor/issues): Report bugs or request features
+
+## What's New in v0.3.0
+
+### New Features
+- **Context Handoff**: `/conductor:handoff` creates comprehensive handoff documents for transferring implementation context between sections/sessions
+- **Multi-Section Support**: Large tracks can now span multiple AI context windows with section tracking and chained handoffs
+- **Auto-Handoff Detection**: Implementation workflow suggests handoff after 5+ tasks or at phase boundaries
+
+### Improvements
+- **Enhanced State Tracking**: `implement_state.json` now tracks `section_count`, `last_handoff`, and `handoff_history`
+- **Better Resume Experience**: Handoff documents provide clear context and resume instructions for next session
 
 ## What's New in v0.2.0
 

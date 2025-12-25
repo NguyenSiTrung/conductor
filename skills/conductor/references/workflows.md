@@ -18,6 +18,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 - [Workflow: Archive](#workflow-archive)
 - [Workflow: Export](#workflow-export)
 - [Workflow: Refresh](#workflow-refresh)
+- [Workflow: Handoff](#workflow-handoff)
 - [State Files Reference](#state-files-reference)
 - [Status Markers](#status-markers)
 
@@ -44,6 +45,7 @@ Context-Driven Development for Claude Code. Measure twice, code once.
 | `/conductor-revise` | Update spec/plan when implementation reveals issues |
 | `/conductor-archive` | Archive completed tracks |
 | `/conductor-export` | Export project summary |
+| `/conductor-handoff` | Create context handoff for section transfer |
 | `/conductor-refresh [scope]` | Sync context docs with current codebase state |
 
 ---
@@ -920,6 +922,140 @@ Next suggested refresh: [date 2 days from now]
 
 ---
 
+## Workflow: Handoff
+
+**Trigger:** `/conductor-handoff`
+
+Use this command when you're mid-implementation and need to transfer context to a new section/session. Essential for large tracks that span multiple AI context windows.
+
+### 1. Identify Active Track
+- Find track marked `[~]` in `conductor/tracks.md`
+- If no active track, ask user to specify
+- Load spec.md, plan.md, and implement_state.json
+
+### 2. Gather Context
+
+**Progress Analysis:**
+- Count completed `[x]`, in-progress `[~]`, pending `[ ]` tasks
+- Calculate overall percentage
+- Identify current phase and task
+
+**Recent Changes:**
+```bash
+git log --oneline -10
+git diff --name-only HEAD~5
+```
+
+**Unresolved Issues:**
+- Check for `[!]` blocked markers
+- Read blockers.md if exists
+- Ask user for any pending decisions
+
+### 3. Update Implementation State
+
+Update `conductor/tracks/<track_id>/implement_state.json`:
+```json
+{
+  "current_phase": "Phase Name",
+  "current_phase_index": 1,
+  "current_task_index": 3,
+  "completed_phases": ["Phase 1"],
+  "section_count": 2,
+  "last_handoff": "2024-12-25T10:30:00Z",
+  "handoff_history": [
+    {
+      "section": 1,
+      "timestamp": "2024-12-25T08:00:00Z",
+      "phase_at_handoff": "Phase 1",
+      "task_at_handoff": 5,
+      "handoff_file": "handoff_20241225_080000.md"
+    }
+  ],
+  "status": "handed_off",
+  "last_updated": "2024-12-25T10:30:00Z"
+}
+```
+
+### 4. Create Handoff Document
+
+Create `conductor/tracks/<track_id>/handoff_<YYYYMMDD_HHMMSS>.md`:
+
+```markdown
+# Implementation Handoff - Section <N>
+
+**Track:** <description>
+**Track ID:** <track_id>
+**Created:** <timestamp>
+**Previous Section:** [handoff_<prev>.md](handoff_<prev>.md)
+
+## Progress Summary
+- Overall: X% complete
+- Current Phase: Phase N
+- Current Task: Task description
+
+## Completed in This Section
+- [x] Task 1 (commit: abc1234)
+- [x] Task 2 (commit: def5678)
+
+## Key Implementation Decisions
+1. Decision 1 and rationale
+2. Decision 2 and rationale
+
+## Code Changes Summary
+- Files modified with brief descriptions
+- Recent commits
+
+## Unresolved Issues
+- Blockers or pending decisions
+
+## Context for Next Section
+- Critical information
+- Testing status
+
+## Next Steps
+1. Immediate next task
+2. Upcoming work
+
+## Resume Instructions
+1. Run `/conductor-implement <track_id>`
+2. State auto-resumes from saved position
+```
+
+### 5. Commit Handoff
+
+```bash
+git add conductor/tracks/<track_id>/
+git commit -m "conductor(handoff): Create section <N> handoff for <track_id>"
+```
+
+### 6. Present Summary
+
+```
+## ✅ Handoff Complete
+
+**Track:** <description>
+**Section:** N → N+1
+**Progress:** X% complete
+
+### Handoff Document
+📄 conductor/tracks/<track_id>/handoff_<timestamp>.md
+
+### Resume Command
+/conductor-implement <track_id>
+
+### Next Action
+<specific next task>
+```
+
+### 7. Auto-Handoff Detection (in Implement)
+
+The implement workflow should suggest handoff when:
+- 5+ tasks completed in current section without handoff
+- Phase boundary with significant remaining work
+- User mentions context issues
+
+---
+
 ## State Files Reference
 
 | File | Purpose |
@@ -933,6 +1069,7 @@ Next suggested refresh: [date 2 days from now]
 | `conductor/tracks/<id>/spec.md` | Requirements |
 | `conductor/tracks/<id>/plan.md` | Phased task list |
 | `conductor/tracks/<id>/implement_state.json` | Phase-aware implementation resume state |
+| `conductor/tracks/<id>/handoff_*.md` | Section handoff documents |
 | `conductor/tracks/<id>/blockers.md` | Block history log |
 | `conductor/tracks/<id>/skipped.md` | Skipped tasks log |
 | `conductor/tracks/<id>/revisions.md` | Revision history log |

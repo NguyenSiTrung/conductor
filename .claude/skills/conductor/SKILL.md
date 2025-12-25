@@ -58,6 +58,7 @@ For active tracks, also load:
 | "This is blocked" | `/conductor-block` |
 | "Skip this task" | `/conductor-skip` |
 | "This needs revision" / "Spec is wrong" | `/conductor-revise` |
+| "Save context" / "Handoff" / "Transfer to next section" | `/conductor-handoff` |
 | "Archive completed" | `/conductor-archive` |
 | "Export summary" | `/conductor-export` |
 | "Docs are outdated" / "Sync with codebase" | `/conductor-refresh` |

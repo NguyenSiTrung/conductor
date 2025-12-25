@@ -2,6 +2,65 @@
 
 This guide explains how to work with Conductor commands manually without relying on skills or auto-activation. Use this when you need precise control over the workflow or when skills don't behave as expected.
 
+## Workflow Overview
+
+```mermaid
+flowchart TD
+    subgraph SETUP["🚀 Setup (Once)"]
+        A[Project] --> B["/conductor:setup"]
+        B --> C["Context Files Created"]
+    end
+
+    subgraph TRACK["📋 Per Track"]
+        C --> D["/conductor:newtrack"]
+        D --> E["spec.md + plan.md"]
+        E --> F{Approve?}
+        F -->|Revise| G["/conductor:revise"]
+        G --> E
+        F -->|Yes| H["/conductor:implement"]
+    end
+
+    subgraph IMPL["⚡ Implementation Loop"]
+        H --> I["Execute Task"]
+        I --> J{Complete?}
+        J -->|Yes| K["Mark [x]"]
+        K --> L{More Tasks?}
+        L -->|Yes| M{5+ Done?}
+        M -->|Yes| N["/conductor:handoff"]
+        N --> O["New Session"]
+        O --> H
+        M -->|No| I
+        L -->|No| P["Track Done ✅"]
+    end
+
+    subgraph ISSUES["⚠️ Handle Issues"]
+        J -->|Blocked| Q["/conductor:block"]
+        Q --> R["/conductor:skip"]
+        R --> I
+    end
+
+    subgraph DONE["🎉 Cleanup"]
+        P --> S["/conductor:archive"]
+        P --> T["/conductor:export"]
+        S --> U{New Track?}
+        U -->|Yes| D
+    end
+
+    H -.-> V["/conductor:status"]
+    H -.-> W["/conductor:validate"]
+```
+
+### Quick Reference
+
+| Workflow | Commands |
+|----------|----------|
+| **Standard** | `setup` → `newtrack` → `implement` → `archive` |
+| **Multi-Section** | `implement` → `handoff` → *(new session)* → `implement` |
+| **Blocked Task** | `block` → `skip` or wait → continue |
+| **Plan Changes** | `revise` → continue `implement` |
+| **Check Status** | `status` or `validate` anytime |
+| **Sync Context** | `refresh` when codebase drifts |
+
 ## Why Manual Mode?
 
 Skills are convenient but can sometimes:
@@ -416,6 +475,66 @@ Step 4: Approve changes
    - Applied incrementally
    - State saved in refresh_state.json
 ```
+
+---
+
+### 13. `/conductor:handoff` (or `/conductor-handoff`)
+
+**Purpose**: Create context handoff for transferring implementation to next section/session.
+
+**When to use**: 
+- Mid-implementation when context window is getting full
+- Before ending a long session
+- At phase boundaries with significant remaining work
+- Transferring work to another session/agent
+
+**Manual workflow**:
+
+```
+Step 1: Run the command
+   /conductor:handoff
+
+Step 2: Context gathering
+   - Current phase and task position
+   - Progress percentage
+   - Recent git commits
+
+Step 3: Provide additional context
+   - Key implementation decisions
+   - Unresolved issues or blockers
+
+Step 4: Handoff document generated
+   - Progress summary
+   - Code changes summary
+   - Context for next section
+   - Resume instructions
+
+Step 5: State updated
+   - section_count incremented
+   - handoff_history updated
+   - implement_state.json saved
+```
+
+**Generated artifacts**:
+```
+conductor/tracks/<track_id>/
+├── handoff_YYYYMMDD_HHMMSS.md  # Section handoff document
+└── implement_state.json         # Updated with section tracking
+```
+
+**Handoff document contains**:
+- Progress summary (% complete, current phase/task)
+- Tasks completed in this section
+- Key implementation decisions
+- Code changes summary
+- Unresolved issues
+- Context for next section
+- Next steps and resume instructions
+
+**Auto-detection**: The implement command will suggest handoff when:
+- 5+ tasks completed without handoff
+- Phase boundary with >50% tasks remaining
+- User mentions context issues
 
 ---
 
